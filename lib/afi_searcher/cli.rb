@@ -16,6 +16,7 @@ class CommandLineInterface
         puts "To see every film by a certain editor, enter 'sort by editor'"
         puts "To see every film by a certain producer, enter 'sort by producer'"
         puts "To see every film from a certain production company, enter 'sort by production company'"
+        puts "To see every film from a particular year, enter 'sort by year'"
         puts "To the the details of an individual film, enter 'see film'"
         puts "To quit, enter 'exit'"
         user_input = gets.chomp
@@ -38,6 +39,8 @@ class CommandLineInterface
               display_by_production_company
           when "see film"
             display_individual_movie
+          when "sort by year"
+            sort_by_year
           end
       end
     end
@@ -194,6 +197,21 @@ class CommandLineInterface
             )
           end
         end
+      end
+    end
+
+    def sort_by_year
+      count = 0
+      puts "What year would you like to search for?"
+      user_input = gets.chomp
+      Movies.all.each do |movie|
+        if movie.year == user_input
+          puts "#{movie.rank}. #{movie.title} - #{movie.year}"
+          count +=1
+        end
+      end
+      if count == 0
+        puts "There were no films in the AFI top 100 from that year."
       end
     end
   
