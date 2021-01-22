@@ -22,7 +22,14 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+1) To initialize program, run `ruby bin/afi_searcher.rb` in your terminal. 
+2) The program will prompt you with a list of DISPLAY OPTIONS and SORT OPTIONS allowing you to:
+   - Display the list of films from 1-100
+   - Display the details of an individual movie
+   - Show a list of artists for every creative field featured (director, writer, cast, etc.)
+   - Sort by director, cast member, writer, producer, editor, cinematographer, and production company
+   - See the most credited artist by category
+3) When typing, follow instructions EXACTLY. For example, if you are instructed to `enter 'directors`, type exactly as displayed.
 
 ## Development
 
