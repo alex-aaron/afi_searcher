@@ -3,8 +3,6 @@ class CommandLineInterface
 
     BASE_PATH = "https://www.afi.com/afis-100-years-100-movies-10th-anniversary-edition/"
 
-    @@movie_attributes = ["cast", "cinematographer", "directors", "editor", "producer", "production_company", 
-                          "rank", "title", "writer", "year"]
 
     def call 
       Scraper.new.scrape_afi(BASE_PATH)
@@ -46,7 +44,6 @@ class CommandLineInterface
           end
       end
     end
-  ########################## DISPLAY METHODS ##########################
 
     def print_welcome_statement
       puts "Welcome to the AFI Top 100 Films sorter!"
@@ -86,33 +83,37 @@ class CommandLineInterface
     end
 
     def display_individual_movie
-      count = 0
       puts "Which film would you like to search for?"
-      user_input = gets.chomp.upcase
-      Movies.all.each do |movie|
-        if movie.title != nil
-          if movie.title.include?(user_input)
-             puts "#{movie.rank}. #{movie.title} - #{movie.year}"
-             print_movie_details(movie, "directors", "Director")
-             print_movie_details(movie, "writer", "Writer")
-             print_movie_details(movie, "producer", "Producer")
-             print_movie_details(movie, "cast", "Cast")
-             print_movie_details(movie, "cinematographer", "Cinematographer")
-             print_movie_details(movie, "editor", "Editor")
-             print_movie_details(movie, "production_company", "Production Company")
-             puts ""
-          end
-        end
+      movie_title = gets.chomp.upcase
+      movie = Movies.find_movie_by_title(movie_title)
+      if movie.length > 0
+        print_movie_details(movie[0])
+      else
+        puts %Q(
+        "No movie matching that title."
+
+        )
       end
     end
 
-    def print_movie_details(object, category, category_text)
-      if object.send(category).length > 1
-        puts "    #{category_text}: #{object.send(category).join(", ")}"
-      else
-        puts "    #{category_text}: #{object.send(category)[0]}"
+    def print_movie_details(movie_object)
+      disciplines = [
+        ["directors", "Director"], ["writer", "Writer"], ["cast", "Cast"], ["producer", "Producer"],
+        ["cinematographer", "Cinematographer"], ["editor", "Editor"],["production_company", "Production Company"]
+      ]
+      puts "#{movie_object.rank}. #{movie_object.title} - #{movie_object.year}"
+      disciplines.each do |discipline|
+        if movie_object.send(discipline[0]) != nil
+          if movie_object.send(discipline[0]).length > 1
+            puts "  #{discipline[1]}: #{movie_object.send(discipline[0]).join(", ")}"
+          else
+            puts "  #{discipline[1]}: #{movie_object.send(discipline[0])[0]}"
+          end
+        end
       end
+      puts ""
     end
+
 
     def display_by_category
       puts %Q(
@@ -129,13 +130,11 @@ class CommandLineInterface
       if category_selection == "production company"
         category_selection = "production_company"
       end
-      artist_array = create_array_for_artist(category_selection).uniq.sort!
+      artist_array = Movies.find_all_artists_by_category(category_selection).uniq.sort!
       artist_array.each do |artist|
         puts artist
       end
     end
-
-    ##################### SORT METHODS #######################
 
     def sort_by_user_input(sort_category)
       count = 0
@@ -148,51 +147,39 @@ class CommandLineInterface
         puts "Which #{sort_category} would you like to search for?"
       end
       search_input = gets.chomp
-      Movies.all.each do |movie|
-        if movie.send(sort_category) != nil
-          movie.send(sort_category).each do |credit|
-            if credit.match(/#{search_input}/)
-              puts "#{movie.rank}. #{movie.title} - #{movie.year}"
-              count += 1
-            end
-          end
-        end
-      end
-      if count == 0
+      arr = Movies.find_movies_by_artist(sort_category, search_input)
+      if arr.length == 0
         puts "There are no films matching that artist."
+      else
+        arr.each do |movie|
+          puts movie
+        end
       end
     end
   
     def sort_by_year
-      count = 0
       puts "What year would you like to search for?"
-      user_input = gets.chomp
-      Movies.all.each do |movie|
-        if movie.year == user_input
+      year = gets.chomp
+      movies_by_year = Movies.find_movies_by_release_year(year)
+      if movies_by_year.length > 0
+        movies_by_year.each do |movie|
           puts "#{movie.rank}. #{movie.title} - #{movie.year}"
-          count +=1
         end
-      end
-      if count == 0
-        puts "There were no films in the AFI top 100 from that year."
+      else
+        puts "There were no movies in that year."
       end
     end
 
     def sort_by_decade
       puts "Which decade would you like to search for. Enter like this: 1990s"
       user_input = gets.chomp
-      year_array = user_input.split("")
-      decade_search = year_array[0] + year_array[1] + year_array[2]
-      decade_array = []
-      Movies.all.each do |movie|
-        if movie.year.match(/#{decade_search}/)
-          entry = "#{movie.rank}. #{movie.title} - #{movie.year}"
-          decade_array << entry
+      decade_array = Movies.find_movies_by_decade(user_input)
+      if decade_array.length > 0
+        decade_array.each do |movie|
+          puts "#{movie.rank}. #{movie.title} - #{movie.year}"
         end
-      end
-      puts "#{decade_array.length} movies from the #{user_input}:"
-      decade_array.each do |decade_movie|
-        puts decade_movie
+      else
+        puts "There were no films from that decade"
       end
     end
 
@@ -212,7 +199,7 @@ class CommandLineInterface
       if artist_selection == "production company"
         artist_selection = "production_company"
       end
-      arr = create_array_for_artist(artist_selection)
+      arr = Movies.find_all_artists_by_category(artist_selection)
       artist_hash = create_most_films_by_artist_hash(arr)
       max_credits = determine_max_number_of_credits(artist_hash)
       artist_hash.each do |key, value|
@@ -223,11 +210,9 @@ class CommandLineInterface
       if most_credited_array.length > 1
         most_credited_array.each do |credit|
           print_by_name_and_category(credit, artist_selection, max_credits)
-          #puts "#{credit} - #{max_credits} films"
         end
       else
         print_by_name_and_category(most_credited_array[0], artist_selection, max_credits)
-        #puts "#{most_credited_array[0]} - #{max_credits} films"
       end
     end
 
@@ -235,40 +220,15 @@ class CommandLineInterface
       puts "#{name} - #{num_movies} movies:"
       Movies.all.each do |movie|
         if movie.send(category) != nil
-          if movie.send(category).include?(name)
-            puts "  #{movie.rank}. #{movie.title} - #{movie.year}"
+          movie.send(category).each do |credit|
+            if credit.match(/#{name}/)
+              puts "#{movie.rank}. #{movie.title} - #{movie.year}"
+            end
           end
         end
       end
-    end
+    end    
 
-    def create_array_for_artist(category)
-      artist_array = []
-      Movies.all.each do |movie|
-        if movie.send(category) != nil
-          if movie.send(category).length > 1
-            movie.send(category).each do |credit|
-              if credit.match(/.\s[A-Z].[A-Z].[A-Z]/)
-                separated_credit = credit.split(", ")
-                credit_minus_guild = separated_credit[0].strip
-                artist_array << credit_minus_guild[0]
-              else
-                artist_array << credit
-              end
-            end
-          else
-            if movie.send(category)[0].match(/.\s[A-Z].[A-Z].[A-Z]/)
-              separated_credit = movie.send(category)[0].split(", ")
-              credit_minus_guild = separated_credit[0].strip
-              artist_array << credit_minus_guild
-            else
-              artist_array << movie.send(category)[0]
-            end
-          end
-        end
-      end
-      artist_array
-    end   
     
     def create_most_films_by_artist_hash(array)
       artist_hash = {}
@@ -280,6 +240,16 @@ class CommandLineInterface
         end
       end
       artist_hash
+    end
+
+    def collect_from_artist_hash(artist_hash, max_num)
+      return_array = []
+      artist_hash.each do |key, value|
+        if value == max
+          return_array << key
+        end
+      end
+      return_array
     end
 
     def determine_max_number_of_credits(hash)
